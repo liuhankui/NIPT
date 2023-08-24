@@ -1,4 +1,4 @@
-# NIPT data for GWAS of PPH
+# Main code of the pipeline for NIPT data GWAS
 
 # fq2bam
 ```
