@@ -2,11 +2,12 @@
 
 # fq2bam
 ```
-fastp -q 20 -u 10 -n 1 --in1 fq.gz -o clean.fq.gz
+#fastp -q 20 -u 10 -n 1 --in1 fq.gz -o clean.fq.gz
+SOAPnuke filter -n 0.1 -q 0.1 -l 5 -G --seqType 1 -Q 2 --fq1 fq.gz -o ./ -C clean.fq.gz
 #35bp
-bwa aln GRCh38.fa clean.fq.gz|bwa samse GRCh38.fa - clean.fq.gz -r '@RG\tID:sample\tPL:illumina\tPU:sample\tLB:sample\tSM:sample\tCN:BGI'|samblaster --excludeDups --ignoreUnmated --maxSplitCount 2 --minNonOverlap 20|samtools view -Sb -F 2820 -q 1 -|sambamba sort -t 4 -m 2G --tmpdir=./tmp -o sample.bam /dev/stdin
+bwa aln GRCh38.fa clean.fq.gz|bwa samse GRCh38.fa - clean.fq.gz|samblaster --excludeDups --ignoreUnmated --maxSplitCount 2 --minNonOverlap 20|samtools view -Sb -F 2820 -q 1 -|sambamba sort -t 4 -m 2G --tmpdir=./tmp -o sample.bam /dev/stdin
 #135bp
-bwa mem -R '@RG\tID:sample\tPL:illumina\tPU:sample\tLB:sample\tSM:sample\tCN:BGI' GRCh38.fa clean.fq.gz|samblaster --excludeDups --ignoreUnmated --maxSplitCount 2 --minNonOverlap 20|samtools view -Sb -F 2820 -q 1 -|sambamba sort -t 4 -m 2G --tmpdir=./tmp -o sample.bam /dev/stdin
+bwa mem GRCh38.fa clean.fq.gz|samblaster --excludeDups --ignoreUnmated --maxSplitCount 2 --minNonOverlap 20|samtools view -Sb -F 2820 -q 1 -|sambamba sort -t 4 -m 2G --tmpdir=./tmp -o sample.bam /dev/stdin
 mosdepth qc sample.bam -f GRCh38.fa --fast-mode --no-per-base --by 1000000 --thresholds 1,2,4
 java -Xmx3g -jar gatk.jar BaseRecalibrator -R GRCh38.fa -I sample.bam -O bqsr.file --known-sites dbsnp_146.hg38.vcf.gz --known-sites 1000G_omni2.5.hg38.vcf.gz --known-sites hapmap_3.3.hg38.vcf.gz
 java -Xmx3g -jar gatk.jar ApplyBQSR -R GRCh38.fa -I sample.bam -O sample.bqsr.bam --bqsr-recal-file bqsr.file
