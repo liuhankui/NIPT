@@ -70,7 +70,28 @@ flashpca --bfile pca --outpc pca.pc --batch 10
 # GWAS
 ```
 zcat SNP.vcf.gz |vawk --header 'print $1"_"$2"_"$4"_"$5,S$*$GT}'|bgzip -f > gwas.data.gz
-Rscript gwas.r gwas.data.gz gwas.fam gwas.cov pca.pc gwas.summary.gz
+Rscript gwas.r
+```
+
+# GWAS R code [gwas.r]
+```
+gdf<-read.table(gzfile('gwas.data.gz'))
+fam<-read.table('gwas.fam',head=T)
+pc<-read.table('pca.pc',head=T,head=T)
+#names(fam)
+# [1] "FID"            "IID"            "Age"            "Height"         "BMI"            "Birthweight"           "PPH"
+#names(pc)
+# [1] "FID"            "IID"            "PC1"            "PC2"         "PC3"            "PC4"           "PC5"
+y<-fam$PPH
+
+sdf<-as.data.frame(t(apply(gdf[,-1],1,function(x){
+  x<-as.numeric(as.character(factor(x,levels=c('0|0','0|1','1|0','1|1'),labels=c(0,1,1,2))))
+  coef<-summary(lm(y~fam$Age+fam$Height+fam$BMI+fam$Birthweight+pc$PC1+pc$PC2+pc$PC3+pc$PC4+pc$PC5+x))$coefficients
+  return(coef[nrow(coef),c(1,2,4)])
+})))
+names(sdf)<-c('Beta','se','Pvalue')
+sdf$SNP<-gdf[,1]
+write.table(sdf[,c(4,1,2,3)],file=gzfile('gwas.summary.gz'),sep=' ',quote=F,row.names=F,col.names=T)
 ```
 
 # Heritability
@@ -79,7 +100,17 @@ zcat gwas.summary.gz|awk '$NF<0.01{print $1}'|awk -F '_' '{print $1,$2-1,$2}'|tr
 tabix SNP.vcf.gz -R s.bed -h|plink --vcf - --make-bed --out SNP
 gcta --bfile SNP --ld-score-region 500 --out SNP
 gcta --bfile SNP --make-grm --out sample
-echo 'lds_seg = read.table("SNP.score.ld",header=T,colClasses=c("character",rep("numeric",8)))
+Rscript split.ld.r
+gcta --bfile NIPT --extract snp_group1.txt --make-grm --out NIPT_group1
+gcta --bfile NIPT --extract snp_group2.txt --make-grm --out NIPT_group2
+gcta --bfile NIPT --extract snp_group3.txt --make-grm --out NIPT_group3
+gcta --bfile NIPT --extract snp_group4.txt --make-grm --out NIPT_group4
+#echo "NIPT_group1 NIPT_group2 NIPT_group3 NIPT_group4"|tr ' ' '\n' > multi_GRMs.txt
+gcta --reml --mgrm multi_GRMs.txt --pheno phe.txt --qcovar cov.txt --mpheno 1 --out H2
+```
+# R code [split.ld.r]
+```
+lds_seg = read.table("SNP.score.ld",header=T,colClasses=c("character",rep("numeric",8)))
 quartiles=summary(lds_seg$ldscore_SNP)
 lb1 = which(lds_seg$ldscore_SNP <= quartiles[2])
 lb2 = which(lds_seg$ldscore_SNP > quartiles[2] & lds_seg$ldscore_SNP <= quartiles[3])
@@ -92,25 +123,63 @@ lb4_snp = lds_seg$SNP[lb4]
 write.table(lb1_snp, "snp_group1.txt", row.names=F, quote=F, col.names=F)
 write.table(lb2_snp, "snp_group2.txt", row.names=F, quote=F, col.names=F)
 write.table(lb3_snp, "snp_group3.txt", row.names=F, quote=F, col.names=F)
-write.table(lb4_snp, "snp_group4.txt", row.names=F, quote=F, col.names=F)' > s.r
-Rscript s.r
-gcta --bfile NIPT --extract snp_group1.txt --make-grm --out NIPT_group1
-gcta --bfile NIPT --extract snp_group2.txt --make-grm --out NIPT_group2
-gcta --bfile NIPT --extract snp_group3.txt --make-grm --out NIPT_group3
-gcta --bfile NIPT --extract snp_group4.txt --make-grm --out NIPT_group4
-#echo "NIPT_group1 NIPT_group2 NIPT_group3 NIPT_group4"|tr ' ' '\n' > multi_GRMs.txt
-gcta --reml --mgrm multi_GRMs.txt --pheno phe.txt --qcovar cov.txt --mpheno 1 --out H2
+write.table(lb4_snp, "snp_group4.txt", row.names=F, quote=F, col.names=F)'
 ```
 
-# Enrichment
+# Enrichment R code
+```
+library(EWCE)
+PPH_gene<-c("ADAMTS20","ERVFC1","GATA6","HTR1B","KIF26A","NEGR1","RERG","SEMA6A","TMC1")
+#load('CellTypeData_MC.rda')
+load('CellTypeData_uterus.rda')
 
+bg  = attr(ctd[[1]]$specificity,'dimnames')[[1]]
+hits=unique(PPH_gene[PPH_gene %in% bg])
 
+reps=10000
+set.seed(2022)
+full_results = bootstrap_enrichment_test(sct_data=ctd,
+                                         hits=hits.target,
+                                         bg=bg,
+                                         reps=reps,annotLevel=1)
+full_results$results$padjust<-p.adjust(full_results$results$p,method='fdr')
+```
 
-# network
+# GGM Network r code
+```
+library(huge)
+library(GGally)
+library(network)
+library(ggplot2)
 
+df<-read.table('gene.exp',head=T)
+df<-df[,colSums(df)>0]
 
+mbModel <- huge(as.matrix(df), method = "mb")
+mbOptRIC = huge.select(mbModel)
+mbOptRICGraph = mbOptRIC$refit
+net<-network(mbOptRICGraph)
+network.vertex.names(net)<-names(df)
 
-# choose reference panel
+tmp<-as.matrix(sparseMatrix(i=mbOptRIC$refit@i+1,p=mbOptRIC$refit@p,x=mbOptRIC$refit@x,dims=c(32,32)),diag=T)
+network.edgecount(net)
+
+net %v% "color" = 'black'
+cor.matrix<- cor(df,use = "pairwise.complete.obs")
+net %e% "weights"<-abs(cor.matrix[which(tmp==1 & lower.tri(tmp),arr.ind=TRUE)])*20
+
+set.seed(1)
+ggnet2(net,
+       size = 10,
+       hjust=-0.4,
+       label = TRUE,
+       label.size=4,
+       edge.size = "weights",
+       color= "color",
+       layout.exp=0.8)
+```
+
+# Choose reference panel
 ```
 awk '$6=="CDX" && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Dai.list
 awk '($6=="CHS" || '$6=="CHB") && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Han.list
@@ -148,7 +217,12 @@ zcat a.gz|join - ac.pos|gzip -f > ac.gz
 zcat b.gz|join - bc.pos|gzip -f > bc.gz
 zcat c.gz|join - ac.pos|gzip -f > ca.gz
 zcat c.gz|join - bc.pos|gzip -f > cb.gz
-echo 'ac<-read.table(gzfile('ac.gz'))
+Rscript accuracy.r
+```
+
+# R code [accuracy.r]
+```
+ac<-read.table(gzfile('ac.gz'))
 bc<-read.table(gzfile('bc.gz'))
 ca<-read.table(gzfile('ca.gz'))
 cb<-read.table(gzfile('cb.gz'))
@@ -160,6 +234,5 @@ for(i in 3:ncol(ac)){
 }
 accuracy_Han<-sum(ac[,3:nn]==ca[,3:nn])/(nrow(ac)*(ncol(ac)-2))
 accuracy_global<-sum(bc[,3:nn]==cb[,3:nn])/(nrow(bc)*(ncol(bc)-2))
-print(c(accuracy_Han,accuracy_globa))' > accuracy.r
-Rscript accuracy.r
+print(c(accuracy_Han,accuracy_globa))
 ```
