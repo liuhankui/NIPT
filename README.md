@@ -1,4 +1,4 @@
-# NIPT
+# NIPT data for GWAS of PPH
 
 # fq2bam
 ```
