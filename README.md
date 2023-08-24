@@ -131,7 +131,7 @@ write.table(lb4_snp, "snp_group4.txt", row.names=F, quote=F, col.names=F)'
 ```
 library(EWCE)
 PPH_gene<-c("ADAMTS20","ERVFC1","GATA6","HTR1B","KIF26A","NEGR1","RERG","SEMA6A","TMC1")
-#load('CellTypeData_MC.rda')
+#load('CellTypeData_muscle.rda')
 load('CellTypeData_uterus.rda')
 
 bg  = attr(ctd[[1]]$specificity,'dimnames')[[1]]
