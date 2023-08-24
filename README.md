@@ -181,6 +181,13 @@ ggnet2(net,
 
 # Choose reference panel
 ```
+
+# 20130606_g1k_3202_samples_ped_population.txt
+# 1kGP_high_coverage_Illumina.chr21.filtered.SNV_INDEL_SV_phased_panel.vcf.gz
+# cram files
+# find these files here
+# https://42basepairs.com/browse/s3/1000genomes/1000G_2504_high_coverage
+
 awk '$6=="CDX" && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Dai.list
 awk '($6=="CHS" || '$6=="CHB") && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Han.list
 awk '$6!="CDX" && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > global.list
