@@ -43,7 +43,7 @@ bcftools stats sample.pass.vcf.gz | grep "TSTV"
 ```
 #reference panel
 cat bam.list|awk -F '/' '{print $NF}'|awk -F '.' '{print $1}' > sample.id
-tabix reference.CH.vcf.gz chr1:1-10000000 -h|bcftools convert - --haplegendsample ref
+tabix Han.vcf.gz chr1:1-10000000 -h|bcftools convert - --haplegendsample ref
 tabix sample.pass.vcf.gz chr1:1-10000000|cut -f '1,2,4,5' > pos.txt
 #QUILT for sample size < 10000
 Rscript QUILT.R  --outputdir=.  --tempdir=./tmp  --sampleNames_file=sample.id  --chr=chr1  --regionStart=1  --regionEnd=10000000  --buffer=250000  --bamlist=bam.list  --posfile=pos.txt  --reference_haplotype_file=ref.hap.gz  --reference_legend_file=ref.legend.gz  --nGen=100  --nCores=20
