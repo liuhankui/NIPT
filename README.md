@@ -70,7 +70,7 @@ flashpca --bfile pca --outpc pca.pc --batch 10
 
 # GWAS
 ```
-zcat SNP.vcf.gz |vawk --header 'print $1"_"$2"_"$4"_"$5,S$*$GT}'|bgzip -f > gwas.data.gz
+zcat SNP.vcf.gz|vawk '{print $1"_"$2"_"$4"_"$5,S$*$GT}'|bgzip -f > gwas.data.gz
 Rscript gwas.r
 ```
 
@@ -102,11 +102,11 @@ tabix SNP.vcf.gz -R s.bed -h|plink --vcf - --make-bed --out SNP
 gcta --bfile SNP --ld-score-region 500 --out SNP
 gcta --bfile SNP --make-grm --out sample
 Rscript split.ld.r
-gcta --bfile NIPT --extract snp_group1.txt --make-grm --out NIPT_group1
-gcta --bfile NIPT --extract snp_group2.txt --make-grm --out NIPT_group2
-gcta --bfile NIPT --extract snp_group3.txt --make-grm --out NIPT_group3
-gcta --bfile NIPT --extract snp_group4.txt --make-grm --out NIPT_group4
-#echo "NIPT_group1 NIPT_group2 NIPT_group3 NIPT_group4"|tr ' ' '\n' > multi_GRMs.txt
+gcta --bfile sample --extract snp_group1.txt --make-grm --out sample_group1
+gcta --bfile sample --extract snp_group2.txt --make-grm --out sample_group2
+gcta --bfile sample --extract snp_group3.txt --make-grm --out sample_group3
+gcta --bfile sample --extract snp_group4.txt --make-grm --out sample_group4
+#echo "sample_group1 sample_group2 sample_group3 sample_group4"|tr ' ' '\n' > multi_GRMs.txt
 gcta --reml --mgrm multi_GRMs.txt --pheno phe.txt --qcovar cov.txt --mpheno 1 --out H2
 ```
 # R code [split.ld.r]
@@ -136,13 +136,13 @@ load('CellTypeData_uterus.rda')
 
 bg  = attr(ctd[[1]]$specificity,'dimnames')[[1]]
 hits=unique(PPH_gene[PPH_gene %in% bg])
-
 reps=10000
 set.seed(2022)
 full_results = bootstrap_enrichment_test(sct_data=ctd,
-                                         hits=hits.target,
+                                         hits=hits,
                                          bg=bg,
-                                         reps=reps,annotLevel=1)
+                                         reps=reps,
+                                         annotLevel=1)
 full_results$results$padjust<-p.adjust(full_results$results$p,method='fdr')
 ```
 
@@ -182,7 +182,6 @@ ggnet2(net,
 
 # Choose reference panel
 ```
-
 # 20130606_g1k_3202_samples_ped_population.txt
 # 1kGP_high_coverage_Illumina.chr21.filtered.SNV_INDEL_SV_phased_panel.vcf.gz
 # cram files
@@ -190,7 +189,7 @@ ggnet2(net,
 # https://42basepairs.com/browse/s3/1000genomes/1000G_2504_high_coverage
 
 awk '$6=="CDX" && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Dai.list
-awk '($6=="CHS" || '$6=="CHB") && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Han.list
+awk '($6=="CHS" || $6=="CHB") && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > Han.list
 awk '$6!="CDX" && $3==0 && $4==0{print $2}' 20130606_g1k_3202_samples_ped_population.txt > global.list
 bcftools view 1kGP_high_coverage_Illumina.chr21.filtered.SNV_INDEL_SV_phased_panel.vcf.gz -S Dai.list -r chr21:10000001-20000000|vawk --header '{if(length($4)==1 && length($5)==1 && I$AC/I$AN > 0.01 && I$AC/I$AN < 0.99)print}'|bgzip -f > Dai.vcf.gz
 bcftools view 1kGP_high_coverage_Illumina.chr21.filtered.SNV_INDEL_SV_phased_panel.vcf.gz -S Han.list -r chr21:10000001-20000000|vawk --header '{if(length($4)==1 && length($5)==1 && I$AC/I$AN > 0.01 && I$AC/I$AN < 0.99)print}'|bgzip -f > Han.vcf.gz
@@ -213,7 +212,7 @@ Rscript QUILT.R  --outputdir=./global_ref --tempdir=./global_ref/tmp  --sampleNa
 `date`
 zcat ./Han_ref/quilt.chr21.10250001.19750000.vcf.gz|vawk '{if($2>10250001 && $2<19750000 && I$INFO_SCORE> 0.8 && I$HWE >0.0005 && I$EAF>0.025 && I$EAF<0.975){print $1"_"$2"_"$4"_"$5,I$EAF,S$*$GT}}'|sort -k1,1|gzip -f > a.gz
 zcat ./global_ref/quilt.chr21.10250001.19750000.vcf.gz|vawk '{if($2>10250001 && $2<19750000 && I$INFO_SCORE> 0.8 && I$HWE >0.0005 && I$EAF>0.025 && I$EAF<0.975){print $1"_"$2"_"$4"_"$5,I$EAF,S$*$GT}}'|sort -k1,1|gzip -f > b.gz
-bcftools view Dai.vcf.gz -r chr21:10250001-19750000 |vawk '{print $1"_"$2"_"$4"_"$5,I$AF,S$*$GT}'|sort -k1,1|gzip -f > c.gz
+bcftools view Dai.vcf.gz -r chr21:10250001-19750000 |vawk '{print $1"_"$2"_"$4"_"$5,I$AC/I$AN,S$*$GT}'|sort -k1,1|gzip -f > c.gz
 zcat a.gz|cut -f 1 > a.pos
 zcat b.gz|cut -f 1 > b.pos
 wc -l a.pos
