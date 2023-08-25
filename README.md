@@ -102,10 +102,10 @@ tabix SNP.vcf.gz -R s.bed -h|plink --vcf - --make-bed --out SNP
 gcta --bfile SNP --ld-score-region 500 --out SNP
 gcta --bfile SNP --make-grm --out sample
 Rscript split.ld.r
-gcta --bfile sample --extract snp_group1.txt --make-grm --out sample_group1
-gcta --bfile sample --extract snp_group2.txt --make-grm --out sample_group2
-gcta --bfile sample --extract snp_group3.txt --make-grm --out sample_group3
-gcta --bfile sample --extract snp_group4.txt --make-grm --out sample_group4
+gcta --bfile sample --extract SNP_group1.txt --make-grm --out sample_group1
+gcta --bfile sample --extract SNP_group2.txt --make-grm --out sample_group2
+gcta --bfile sample --extract SNP_group3.txt --make-grm --out sample_group3
+gcta --bfile sample --extract SNP_group4.txt --make-grm --out sample_group4
 #echo "sample_group1 sample_group2 sample_group3 sample_group4"|tr ' ' '\n' > multi_GRMs.txt
 gcta --reml --mgrm multi_GRMs.txt --pheno phe.txt --qcovar cov.txt --mpheno 1 --out H2
 ```
@@ -121,10 +121,10 @@ lb1_snp = lds_seg$SNP[lb1]
 lb2_snp = lds_seg$SNP[lb2]
 lb3_snp = lds_seg$SNP[lb3]
 lb4_snp = lds_seg$SNP[lb4]
-write.table(lb1_snp, "snp_group1.txt", row.names=F, quote=F, col.names=F)
-write.table(lb2_snp, "snp_group2.txt", row.names=F, quote=F, col.names=F)
-write.table(lb3_snp, "snp_group3.txt", row.names=F, quote=F, col.names=F)
-write.table(lb4_snp, "snp_group4.txt", row.names=F, quote=F, col.names=F)'
+write.table(lb1_snp, "SNP_group1.txt", row.names=F, quote=F, col.names=F)
+write.table(lb2_snp, "SNP_group2.txt", row.names=F, quote=F, col.names=F)
+write.table(lb3_snp, "SNP_group3.txt", row.names=F, quote=F, col.names=F)
+write.table(lb4_snp, "SNP_group4.txt", row.names=F, quote=F, col.names=F)'
 ```
 
 # Enrichment R code
