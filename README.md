@@ -97,7 +97,7 @@ write.table(sdf[,c(4,1,2,3)],file=gzfile('gwas.summary.gz'),sep=' ',quote=F,row.
 
 # Heritability
 ```
-zcat gwas.summary.gz|awk '$NF<0.01{print $1}'|awk -F '_' '{print $1,$2-1,$2}'|tr ' ' '\t' > s.bed
+zcat gwas.summary.gz|awk 'NR > 1 && $NF<0.01{print $1}'|awk -F '_' '{print $1,$2-1,$2}'|tr ' ' '\t' > s.bed
 tabix SNP.vcf.gz -R s.bed -h|plink --vcf - --make-bed --out SNP
 gcta --bfile SNP --ld-score-region 500 --out SNP
 gcta --bfile SNP --make-grm --out sample
