@@ -106,7 +106,7 @@ gcta --bfile sample --extract SNP_group1.txt --make-grm --out sample_group1
 gcta --bfile sample --extract SNP_group2.txt --make-grm --out sample_group2
 gcta --bfile sample --extract SNP_group3.txt --make-grm --out sample_group3
 gcta --bfile sample --extract SNP_group4.txt --make-grm --out sample_group4
-#echo "sample_group1 sample_group2 sample_group3 sample_group4"|tr ' ' '\n' > multi_GRMs.txt
+echo "sample_group1 sample_group2 sample_group3 sample_group4"|tr ' ' '\n' > multi_GRMs.txt
 gcta --reml --mgrm multi_GRMs.txt --pheno phe.txt --qcovar cov.txt --mpheno 1 --out H2
 ```
 # R code [split.ld.r]
