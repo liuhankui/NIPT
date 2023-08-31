@@ -78,7 +78,7 @@ Rscript gwas.r
 ```
 gdf<-read.table(gzfile('gwas.data.gz'))
 fam<-read.table('gwas.fam',head=T)
-pc<-read.table('pca.pc',head=T,head=T)
+pc<-read.table('pca.pc',head=T)
 #names(fam)
 # [1] "FID"            "IID"            "Age"            "Height"         "BMI"            "Birthweight"           "PPH"
 #names(pc)
